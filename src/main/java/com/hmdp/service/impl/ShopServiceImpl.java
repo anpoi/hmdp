@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.hmdp.utils.RedisConstants.CACHE_NULL_TTL;
 import static net.sf.jsqlparser.parser.feature.Feature.update;
 
 /**
@@ -44,11 +45,20 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
         }
 
+        //判断命中是否是空值
+        if (shopJson != null) {
+            //返回一个错误信息
+            return Result.fail("店铺不存在！");
+        }
+
         //4 不存在，根据id查询数据库
         Shop shop = getById(id);
 
         //5 不存在，返回错误
         if(shop == null){
+            //将空值写入redis
+            redisTemplate.opsForValue().set(RedisConstants.CACHE_SHOP_KEY + id,"",CACHE_NULL_TTL,TimeUnit.MINUTES);
+
             return Result.fail("店铺不存在！");
         }
 
