@@ -14,7 +14,9 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import static com.hmdp.utils.RedisConstants.LOGIN_USER_TTL;
 import static com.hmdp.utils.RedisConstants.SHOUYE_SHOP_KEY;
 
 /**
@@ -50,7 +52,7 @@ public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> i
             return null;
         }
         //6 存在，写入redis
-        redisTemplate.opsForValue().set(RedisConstants.SHOUYE_SHOP_KEY,JSONUtil.toJsonStr(shopTypes));
+        redisTemplate.opsForValue().set(RedisConstants.SHOUYE_SHOP_KEY,JSONUtil.toJsonStr(shopTypes), LOGIN_USER_TTL, TimeUnit.SECONDS);
         //7 返回
         return shopTypes;
     }
