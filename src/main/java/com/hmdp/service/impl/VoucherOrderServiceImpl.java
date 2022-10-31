@@ -9,9 +9,11 @@ import com.hmdp.service.IVoucherOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.service.IVoucherService;
 import com.hmdp.utils.RedisIdWorker;
+import com.hmdp.utils.SimpleRedisLock;
 import com.hmdp.utils.UserHolder;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +37,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     @Autowired
     private RedisIdWorker redisIdWorker;
 
+    @Autowired
+    private StringRedisTemplate redisTemplate;
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public Result seckillVoucher(Long voucherId) {
         // 1.查询优惠券
         SeckillVoucher voucher = seckillVoucherService.getById(voucherId);
@@ -56,17 +59,47 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             return Result.fail("库存不足！");
         }
         Long  userId = UserHolder.getUser().getId();
-        synchronized (userId.toString().intern()) {
 
-            //现在拿到的是当前的VoucherOrderServiceImpl
-            //this是非代理对象，是目标对象
-            //spring事务失效的可能性之一
-            //需要拿到事务的代理对象,获取代理对象
 
-            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
 
-            return proxy.createVoucherOrder(voucherId);
+        //通过synchronized锁将用户的id锁住，这里调用的方法是为了获取到同一个用户id
+        //由于底层是通过new的形式拼接，所以使用intern去常量池去找，找到了将引用拿过来
+//        synchronized (userId.toString().intern()) {
+//
+//            //动态代理指的是拿到了VoucherOrderServiceImpl的代理
+//            //this是非代理对象，是目标对象,没有事务功能
+//            //spring事务失效的可能性之一
+//            //需要拿到事务的代理对象,获取代理对象
+//
+//            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+//            return proxy.createVoucherOrder(voucherId);
+//        }
+
+        //问题：集群下的线程并发安全问题
+        //由于不同的服务器中，jvm的锁监视器会有多个，每个线程中都会有一个成功
+        //由此导致并行运行，从而导致线程安全问题
+        //使用分布式锁：满足分布式系统或集群模式下多进程可见并且互斥的锁
+        //基于redis的分布式锁
+
+        //创建锁对象
+        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, redisTemplate);
+
+        //获取锁
+        boolean isLock = lock.tryLock(10);
+
+        //判断是否获取锁成功
+        if(!isLock){
+            //获取锁失败
+            return Result.fail("不允许重复下单！");
         }
+        try {
+            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+            return proxy.createVoucherOrder(voucherId);
+        }finally {
+            //释放锁
+            lock.unlock();
+        }
+
     }
 
     @Transactional(rollbackFor = Exception.class)
