@@ -51,10 +51,15 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             // 库存不足
             return Result.fail("库存不足！");
         }
-        //5，扣减库存
+        //5，扣减库存  加锁 控制版本号（库存）乐观锁控制
+        //失败率提高 （更改判断条件）
         boolean success = seckillVoucherService.update()
-                .setSql("stock= stock -1")
-                .eq("voucher_id", voucherId).update();
+                .setSql("stock= stock -1") //set stock = stock -1
+                .eq("voucher_id", voucherId) //where id = ?
+//                .eq("stock",voucher.getStock()) //and stock = ?
+                //不需要判断是否已更改 只要保证库存不会超卖也就是不小于0
+                .gt("stock",voucher.getStock()) //and stock > ?
+                .update();
         if (!success) {
             //扣减库存
             return Result.fail("库存不足！");
