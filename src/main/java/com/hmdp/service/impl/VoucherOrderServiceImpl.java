@@ -11,6 +11,8 @@ import com.hmdp.service.IVoucherService;
 import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.SimpleRedisLock;
 import com.hmdp.utils.UserHolder;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -39,6 +41,10 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private RedissonClient redissonClient;
+
     @Override
     public Result seckillVoucher(Long voucherId) {
         // 1.查询优惠券
@@ -82,10 +88,14 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         //基于redis的分布式锁
 
         //创建锁对象
-        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, redisTemplate);
+        //SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, redisTemplate);
+
+        //通过redissonClient获取锁
+        RLock lock = redissonClient.getLock("locl:order:" + userId);
+
 
         //获取锁
-        boolean isLock = lock.tryLock(10);
+        boolean isLock = lock.tryLock();
 
         //判断是否获取锁成功
         if(!isLock){
