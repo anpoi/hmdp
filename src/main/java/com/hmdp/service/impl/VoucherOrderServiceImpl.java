@@ -80,7 +80,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         // TODO 保存到阻塞队列
 
         // 3 返回订单id
-        return Result.ok(orderId);
+        return Result.ok(orderId);   //asda
     }
 
 //    @Override
