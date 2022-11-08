@@ -176,6 +176,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         String shopJson = redisTemplate.opsForValue().get(RedisConstants.CACHE_SHOP_KEY + id);
 
         //2 判断是否存在
+        // 这里判断不存在直接返回的原因：因为这是一个热点key，是需要之前手动添加的，如果本身就不存在
+        // 就不用继续走数据库，就跟穿透一样返回一个空数据就行
         if (StrUtil.isBlank(shopJson)) {
             //3 存在，直接返回
             return null;
@@ -199,7 +201,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
         //6.2 判断是否获取锁成功
         if (isLock) {
-            //注意：获取锁成功应该再次检查redis缓存是否过期，做DoubleCheck，如果存在则无需重建缓存
+            //todo 注意：获取锁成功应该再次检查redis缓存是否过期，做DoubleCheck，如果存在则无需重建缓存
             //6.3 成功，开启线程实现缓存重建
             CACHE_REBUILD_EXECUTOR.submit(()->{
                 try {
