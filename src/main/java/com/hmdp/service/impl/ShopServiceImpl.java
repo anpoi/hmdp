@@ -44,14 +44,14 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
     @Override
     public Result queryById(Long id) {
-       //缓存穿透
-        //Shop shop = cacheClient.queryWithPassThrough(CACHE_SHOP_KEY,id,Shop.class, this::getById,CACHE_SHOP_TTL,TimeUnit.MINUTES);
+        //缓存穿透
+        Shop shop = cacheClient.queryWithPassThrough(CACHE_SHOP_KEY,id,Shop.class, this::getById,CACHE_SHOP_TTL,TimeUnit.MINUTES);
 
         //互斥锁解决缓存击穿
         //Shop shop = queryWithMutex(id);
 
         //逻辑缓存解决缓存击穿
-        Shop shop = cacheClient.queryWithLogicalExpire(CACHE_SHOP_KEY,id,Shop.class,LOCK_SHOP_KEY,this::getById,CACHE_SHOP_TTL,TimeUnit.MINUTES);
+        //Shop shop = cacheClient.queryWithLogicalExpire(CACHE_SHOP_KEY,id,Shop.class,LOCK_SHOP_KEY,this::getById,CACHE_SHOP_TTL,TimeUnit.MINUTES);
         if(shop == null){
             return Result.fail("店铺不存在！");
         }
