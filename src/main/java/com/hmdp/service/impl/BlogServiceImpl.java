@@ -227,12 +227,12 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         }
 
         //5 封装并返回
-        ScrollResult sr = new ScrollResult();
-        sr.setList(blogs);
-        sr.setOffset(os);
-        sr.setMinTime(minTime);
+        ScrollResult r = new ScrollResult();
+        r.setList(blogs);
+        r.setOffset(os);
+        r.setMinTime(minTime);
 
-        return Result.ok(sr);
+        return Result.ok(r);
     }
 
     private void queryBlogUser(Blog blog) {

@@ -56,8 +56,9 @@ public class BlogController {
         // 获取登录用户
         UserDTO user = UserHolder.getUser();
         // 根据用户查询
+        //followService.query().eq("follow_user_id", user.getId()).list();
         Page<Blog> page = blogService.query()
-                .eq("user_id", user.getId()).page(new Page<>(current, SystemConstants.MAX_PAGE_SIZE));
+                .eq("user_id", user.getId()).orderByDesc("id").page(new Page<>(current, SystemConstants.MAX_PAGE_SIZE));
         // 获取当前页数据
         List<Blog> records = page.getRecords();
         return Result.ok(records);

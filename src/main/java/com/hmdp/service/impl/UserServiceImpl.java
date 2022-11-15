@@ -12,6 +12,7 @@ import com.hmdp.entity.User;
 import com.hmdp.mapper.UserMapper;
 import com.hmdp.service.IUserService;
 import com.hmdp.utils.RegexUtils;
+import com.hmdp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -40,6 +41,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+
+    private static String tokenKey = "";
 
     @Override
     public Result sendCode(String phone, HttpSession session) {
@@ -113,12 +116,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                         .setFieldValueEditor(
                         (fileName,finalValue)->finalValue.toString()));
         //7.3 存储
-        String tokenKey = LOGIN_USER_KEY+token;
+        tokenKey = LOGIN_USER_KEY+token;
         redisTemplate.opsForHash().putAll(tokenKey,userMap);
         //7.4 设置token有效期
         redisTemplate.expire(tokenKey,LOGIN_USER_TTL,TimeUnit.SECONDS);
         //8 返回token
         return Result.ok(token);
+    }
+
+    @Override
+    public Result logout() {
+        //删除redis的缓存，将token有效期设置为0
+        redisTemplate.expire(tokenKey,0,TimeUnit.SECONDS);
+        return Result.ok();
     }
 
     private User createUserWithPhone(String phone) {
