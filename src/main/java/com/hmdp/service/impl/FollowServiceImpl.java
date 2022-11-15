@@ -40,6 +40,28 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     @Autowired
     private IUserService userService;
 
+    /*
+        Feed流产品有两种常见模式：
+        Timeline：不做内容筛选，简单的按照内容发布时间排序，常用于好友或关注。例如朋友圈
+
+        * 优点：信息全面，不会有缺失。并且实现也相对简单
+        * 缺点：信息噪音较多，用户不一定感兴趣，内容获取效率低
+
+        智能排序：利用智能算法屏蔽掉违规的、用户不感兴趣的内容。推送用户感兴趣信息来吸引用户
+
+        * 优点：投喂用户感兴趣信息，用户粘度很高，容易沉迷
+        * 缺点：如果算法不精准，可能起到反作用
+          本例中的个人页面，是基于关注的好友来做Feed流，因此采用Timeline的模式。该模式的实现方案有三种：
+
+        我们本次针对好友的操作，采用的就是Timeline的方式，只需要拿到我们关注用户的信息，然后按照时间排序即可
+
+        ，因此采用Timeline的模式。该模式的实现方案有三种：
+
+        * 拉模式
+        * 推模式
+        * 推拉结合
+     */
+
     @Override
     public Result follow(Long followUserId, Boolean isFollow) {
         //获取登录的用户
